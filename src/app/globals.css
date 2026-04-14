@@ -35,31 +35,31 @@
 :root {
   --radius: 9999px;
 
-  /* Deep Forest + Terracotta */
-  --background: #152624;
+  /* Warm Ink + Terracotta/Amber */
+  --background: #0F0D14;
   --foreground: #F4EDDE;
 
-  --card: #1E332F;
+  --card: #1A1620;
   --card-foreground: #F4EDDE;
-  --popover: #1E332F;
+  --popover: #1A1620;
   --popover-foreground: #F4EDDE;
 
   --primary: #E07A5F;
-  --primary-foreground: #FFFFFF;
+  --primary-foreground: #0F0D14;
 
-  --secondary: #1E332F;
+  --secondary: #1A1620;
   --secondary-foreground: #F4EDDE;
 
-  --muted: #1E332F;
-  --muted-foreground: rgba(244, 237, 222, 0.62);
+  --muted: #1A1620;
+  --muted-foreground: rgba(244, 237, 222, 0.58);
 
-  --accent: #E07A5F;
-  --accent-foreground: #FFFFFF;
+  --accent: #F4A261;
+  --accent-foreground: #0F0D14;
 
   --destructive: #D4614A;
 
-  --border: rgba(244, 237, 222, 0.14);
-  --input: rgba(244, 237, 222, 0.08);
+  --border: rgba(244, 237, 222, 0.1);
+  --input: rgba(244, 237, 222, 0.06);
   --ring: #E07A5F;
 }
 
