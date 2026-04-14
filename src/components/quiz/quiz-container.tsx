@@ -1,44 +1,114 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useReducer, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
-  INITIAL_FORM_DATA,
-  getStepByNumber,
-  getProgressInfo,
-  type FormData,
-} from "@/lib/quiz-config";
-import { calculateSegment } from "@/lib/scoring";
-import {
-  trackSurveyStart,
-  trackSurveyAnswer,
-  trackStepView,
-  trackBackClick,
-  trackFbLead,
-  trackFbCompleteRegistration,
-} from "@/lib/analytics";
+  INITIAL_ANSWERS,
+  type QuizAnswers,
+  type BuildSpec,
+  type Stage,
+} from "@/lib/types";
+import { TOTAL_QUESTIONS, getQuestion } from "@/lib/quiz-config";
 import { ProgressBar } from "./progress-bar";
 import { LandingStep } from "./landing-step";
-import { EmailStep } from "./email-step";
-import { TextInputStep } from "./text-input-step";
-import { SingleSelectStep } from "./single-select-step";
 import { EmailGateForm } from "./email-gate-form";
-import { DiyResult } from "./results/diy-result";
-import { DwyResult } from "./results/dwy-result";
-import { DfyResult } from "./results/dfy-result";
-import { AnalysingStep } from "./analysing-step";
+import { OtpVerifyStep } from "./otp-verify-step";
+import { SingleSelectStep } from "./single-select-step";
+import { TextareaStep } from "./textarea-step";
+import { SpecResult } from "./spec-result";
 
-const STORAGE_KEY = "business-quiz-state";
+interface State {
+  stage: Stage;
+  currentQuestionId: number;
+  name: string;
+  email: string;
+  answers: QuizAnswers;
+  spec: BuildSpec | null;
+  errorMessage: string;
+  direction: 1 | -1;
+}
+
+type Action =
+  | { type: "START" }
+  | { type: "EMAIL_SENT"; name: string; email: string }
+  | { type: "OTP_VERIFIED" }
+  | { type: "ANSWER"; field: keyof QuizAnswers; value: string }
+  | { type: "BACK" }
+  | { type: "START_GENERATE" }
+  | { type: "SPEC_READY"; spec: BuildSpec }
+  | { type: "ERROR"; message: string }
+  | { type: "RESET_TO_EMAIL" };
+
+const initialState: State = {
+  stage: "landing",
+  currentQuestionId: 1,
+  name: "",
+  email: "",
+  answers: INITIAL_ANSWERS,
+  spec: null,
+  errorMessage: "",
+  direction: 1,
+};
+
+function reducer(state: State, action: Action): State {
+  switch (action.type) {
+    case "START":
+      return { ...state, stage: "email", direction: 1 };
+    case "EMAIL_SENT":
+      return {
+        ...state,
+        stage: "otp",
+        name: action.name,
+        email: action.email,
+        answers: { ...state.answers, name: action.name, email: action.email },
+        direction: 1,
+      };
+    case "OTP_VERIFIED":
+      return { ...state, stage: "question", currentQuestionId: 1, direction: 1 };
+    case "ANSWER": {
+      const nextAnswers = { ...state.answers, [action.field]: action.value };
+      if (state.currentQuestionId >= TOTAL_QUESTIONS) {
+        return { ...state, answers: nextAnswers };
+      }
+      return {
+        ...state,
+        answers: nextAnswers,
+        currentQuestionId: state.currentQuestionId + 1,
+        direction: 1,
+      };
+    }
+    case "BACK": {
+      if (state.stage === "otp") {
+        return { ...state, stage: "email", direction: -1, errorMessage: "" };
+      }
+      if (state.stage === "question" && state.currentQuestionId > 1) {
+        return {
+          ...state,
+          currentQuestionId: state.currentQuestionId - 1,
+          direction: -1,
+        };
+      }
+      return state;
+    }
+    case "START_GENERATE":
+      return { ...state, stage: "generating", direction: 1 };
+    case "SPEC_READY":
+      return { ...state, stage: "spec", spec: action.spec, direction: 1 };
+    case "ERROR":
+      return { ...state, errorMessage: action.message };
+    case "RESET_TO_EMAIL":
+      return { ...state, stage: "email", errorMessage: "", direction: -1 };
+    default:
+      return state;
+  }
+}
 
 const variants = {
   enter: (direction: number) => ({
     x: direction > 0 ? 200 : -200,
     opacity: 0,
   }),
-  center: {
-    x: 0,
-    opacity: 1,
-  },
+  center: { x: 0, opacity: 1 },
   exit: (direction: number) => ({
     x: direction > 0 ? -200 : 200,
     opacity: 0,
@@ -46,364 +116,231 @@ const variants = {
 };
 
 export function QuizContainer() {
-  const [mounted, setMounted] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA);
-  const [direction, setDirection] = useState(1);
-  const [stepHistory, setStepHistory] = useState<number[]>([0]);
-  const [isAnalysing, setIsAnalysing] = useState(false);
-  const [llmInsight, setLlmInsight] = useState("");
-  const [emailGateCompleted, setEmailGateCompleted] = useState(false);
+  const [state, dispatch] = useReducer(reducer, initialState);
 
-  // Restore from localStorage on mount
-  useEffect(() => {
-    setMounted(true);
-    // Clear any old quiz state from the previous quiz-funnel
-    localStorage.removeItem("quiz-funnel-state");
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Validate saved data has the right shape
-        if (parsed.formData && typeof parsed.formData.business_type !== "undefined") {
-          setFormData(parsed.formData);
-          setCurrentStep(parsed.currentStep);
-          setStepHistory(parsed.stepHistory);
-        } else {
-          // Old/invalid data, clear it
-          localStorage.removeItem(STORAGE_KEY);
-          const sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-          setFormData((prev) => ({ ...prev, sessionId }));
-          trackSurveyStart(sessionId);
-        }
-      } else {
-        const sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-        setFormData((prev) => ({ ...prev, sessionId }));
-        trackSurveyStart(sessionId);
-      }
-    } catch {
-      const sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-      setFormData((prev) => ({ ...prev, sessionId }));
-    }
-  }, []);
-
-  // Persist to localStorage on state changes
-  useEffect(() => {
-    if (!mounted) return;
-    if (currentStep === 13) return; // Don't persist results
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ formData, currentStep, stepHistory })
-    );
-  }, [formData, currentStep, stepHistory, mounted]);
-
-  const logAnswer = useCallback(
-    (fieldName: string, answer: string | string[]) => {
-      fetch("/api/log-step", {
+  const sendVerification = useCallback(
+    async (name: string, email: string) => {
+      const res = await fetch("/api/send-verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId: formData.sessionId,
-          step: currentStep,
-          fieldName,
-          answer,
-          subscriberId: formData.subscriberId,
-        }),
-      }).catch(console.error);
-    },
-    [formData.sessionId, formData.subscriberId, currentStep]
-  );
-
-  const navigateToStep = useCallback(
-    (nextStep: number, dir: number = 1) => {
-      setDirection(dir);
-      setStepHistory((prev) =>
-        dir > 0 ? [...prev, nextStep] : prev.slice(0, -1)
-      );
-      setCurrentStep(nextStep);
-      trackStepView(nextStep);
+        body: JSON.stringify({ name, email }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        throw new Error(data.error || "Failed to send code");
+      }
+      dispatch({ type: "EMAIL_SENT", name, email });
     },
     []
   );
 
-  // After Q10, trigger analysing
-  const handleLastQuestionAnswer = useCallback(
-    (fieldName: string, value: string | string[]) => {
-      const newFormData = {
-        ...formData,
-        [fieldName]: value,
-      };
-      const result = calculateSegment(newFormData);
-      const finalFormData = {
-        ...newFormData,
-        segment: result.segment,
-      };
-      setFormData(finalFormData);
-      trackSurveyAnswer(currentStep, fieldName, value);
-      logAnswer(fieldName, value);
-      localStorage.removeItem(STORAGE_KEY);
-
-      // Go to analysing screen
-      setIsAnalysing(true);
-    },
-    [formData, currentStep, logAnswer]
-  );
-
-  const handleNext = useCallback(
-    (fieldName: string, value: string | string[]) => {
-      // If this is Q10 (last question), trigger analysing flow
-      if (currentStep === 10) {
-        handleLastQuestionAnswer(fieldName, value);
-        return;
-      }
-
-      const newFormData = {
-        ...formData,
-        [fieldName]: value,
-      };
-      setFormData(newFormData);
-
-      trackSurveyAnswer(currentStep, fieldName, value);
-      logAnswer(fieldName, value);
-
-      const stepConfig = getStepByNumber(currentStep);
-      if (!stepConfig) return;
-
-      const nextStep = stepConfig.getNextStep(value, newFormData);
-      if (nextStep !== null) {
-        navigateToStep(nextStep);
-      }
-    },
-    [formData, currentStep, logAnswer, navigateToStep, handleLastQuestionAnswer]
-  );
-
-  const handleBack = useCallback(() => {
-    if (stepHistory.length <= 1) return;
-    trackBackClick(currentStep);
-    const previousStep = stepHistory[stepHistory.length - 2];
-    navigateToStep(previousStep, -1);
-  }, [stepHistory, currentStep, navigateToStep]);
-
-  // After email gate is submitted on results page
-  const handleEmailGateSubmit = useCallback(
-    (email: string, name: string, subscriberId: number) => {
-      const finalFormData = {
-        ...formData,
-        email,
-        name,
-        subscriberId,
-      };
-      setFormData(finalFormData);
-      trackSurveyAnswer(11, "email", email);
-      trackFbLead();
-      trackFbCompleteRegistration(formData.segment);
-
-      // Submit all quiz data to API
-      fetch("/api/submit-quiz", {
+  const verifyOtp = useCallback(
+    async (code: string) => {
+      const res = await fetch("/api/verify-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          subscriberId,
-          firstName: name,
-          formData: finalFormData,
-          segment: formData.segment,
-          scores: calculateSegment(finalFormData).scores,
-          isOverride: calculateSegment(finalFormData).isOverride,
-        }),
-      }).catch(console.error);
+        body: JSON.stringify({ name: state.name, email: state.email, code }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        throw new Error(data.error || "Code invalid");
+      }
+      dispatch({ type: "OTP_VERIFIED" });
+    },
+    [state.name, state.email]
+  );
 
-      // Send PDF report via email
-      fetch("/api/send-report", {
+  const resendCode = useCallback(async () => {
+    await sendVerification(state.name, state.email);
+  }, [sendVerification, state.name, state.email]);
+
+  const generateSpec = useCallback(async (answers: QuizAnswers) => {
+    dispatch({ type: "START_GENERATE" });
+    try {
+      const res = await fetch("/api/generate-spec", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          email,
-          segment: formData.segment,
-          business_type: formData.business_type,
-          monthly_revenue: formData.monthly_revenue,
-          bottleneck: formData.bottleneck,
-          industry: formData.industry,
-          ai_comfort: formData.ai_comfort,
-          time_available: formData.time_available,
-          budget: formData.budget,
-          urgency: formData.urgency,
-          insight: llmInsight,
-          scores: calculateSegment(formData).scores,
-        }),
-      }).catch(console.error);
-
-      // Unlock results
-      setEmailGateCompleted(true);
-    },
-    [formData, llmInsight]
-  );
-
-  const handleAnalysingComplete = useCallback(
-    (insight: string) => {
-      setLlmInsight(insight);
-      setIsAnalysing(false);
-      navigateToStep(13);
-    },
-    [navigateToStep]
-  );
-
-  const renderStep = () => {
-    const stepConfig = getStepByNumber(currentStep);
-    if (!stepConfig) return null;
-
-    switch (stepConfig.type) {
-      case "landing":
-        return <LandingStep onStart={() => navigateToStep(1)} />;
-
-      case "email":
-        // This step is no longer used in the flow (email is now a gate on results)
-        return null;
-
-      case "text-input":
-        return (
-          <TextInputStep
-            question={stepConfig.question}
-            subtitle={stepConfig.subtitle}
-            placeholder={stepConfig.placeholder || ""}
-            onSubmit={(value) => handleNext(stepConfig.fieldName, value)}
-            defaultValue={
-              (formData[stepConfig.fieldName as keyof FormData] as string) || ""
-            }
-          />
-        );
-
-      case "single-select":
-        return (
-          <SingleSelectStep
-            question={stepConfig.question}
-            subtitle={stepConfig.subtitle}
-            options={stepConfig.options || []}
-            onSelect={(value) => handleNext(stepConfig.fieldName, value)}
-          />
-        );
-
-      case "results": {
-        const segment = formData.segment || "dwy";
-        const resultPage = segment === "dfy"
-          ? <DfyResult formData={formData} insight={llmInsight} />
-          : segment === "diy"
-            ? <DiyResult formData={formData} insight={llmInsight} />
-            : <DwyResult formData={formData} insight={llmInsight} />;
-
-        if (!emailGateCompleted) {
-          return (
-            <div className="relative min-h-screen overflow-hidden">
-              {/* Blurred results behind */}
-              <div className="blur-md opacity-40 pointer-events-none select-none">
-                {resultPage}
-              </div>
-              {/* Email gate overlay - fixed center */}
-              <div className="fixed inset-0 z-10 flex items-center justify-center px-5">
-                <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 sm:p-10 space-y-6 border border-border">
-                  <div className="space-y-3 text-center">
-                    <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-[1.1]">
-                      Your results are ready.
-                    </h2>
-                    <p className="text-muted-foreground text-base">
-                      Enter your details to reveal your personalised report.
-                    </p>
-                  </div>
-                  <EmailGateForm onSubmit={handleEmailGateSubmit} />
-                </div>
-              </div>
-            </div>
-          );
-        }
-
-        return resultPage;
-      }
-
-      default:
-        return null;
+        body: JSON.stringify({ answers }),
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "Failed to generate spec");
+      dispatch({ type: "SPEC_READY", spec: data.spec });
+    } catch (err) {
+      dispatch({
+        type: "ERROR",
+        message: err instanceof Error ? err.message : "Something went wrong.",
+      });
+      dispatch({ type: "SPEC_READY", spec: mockFallback(answers) });
     }
-  };
+  }, []);
 
-  // Analysing screen (between name submit and results)
-  if (isAnalysing) {
+  const handleAnswer = useCallback(
+    (field: keyof QuizAnswers, value: string) => {
+      const isLast = state.currentQuestionId >= TOTAL_QUESTIONS;
+      dispatch({ type: "ANSWER", field, value });
+      if (isLast) {
+        const finalAnswers: QuizAnswers = {
+          ...state.answers,
+          [field]: value,
+        } as QuizAnswers;
+        generateSpec(finalAnswers);
+      }
+    },
+    [state.answers, state.currentQuestionId, generateSpec]
+  );
+
+  // Landing
+  if (state.stage === "landing") {
+    return <LandingStep onStart={() => dispatch({ type: "START" })} />;
+  }
+
+  // Spec (full screen)
+  if (state.stage === "spec" && state.spec) {
     return (
-      <AnalysingStep
-        onComplete={handleAnalysingComplete}
-        formData={formData as unknown as Record<string, unknown>}
-        segment={formData.segment}
-      />
+      <main className="min-h-screen bg-background px-6">
+        <SpecResult spec={state.spec} name={state.name} />
+      </main>
     );
   }
 
-  // Prevent hydration mismatch
-  if (!mounted) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
-  // Landing page and results get full-width layouts
-  if (currentStep === 0 || currentStep === 13) {
-    return (
-      <AnimatePresence mode="wait" custom={direction}>
-        <motion.div
-          key={currentStep}
-          custom={direction}
-          variants={variants}
-          initial="enter"
-          animate="center"
-          exit="exit"
-          transition={{ duration: 0.25, ease: "easeInOut" }}
-          className={currentStep === 13 ? "min-h-screen" : ""}
-        >
-          {renderStep()}
-        </motion.div>
-      </AnimatePresence>
-    );
-  }
-
-  // Quiz questions (1-10) and email/name capture (11-12) get centered layout
-  const showProgress = currentStep >= 1 && currentStep <= 10;
-  const showBack = currentStep >= 1 && currentStep <= 12;
-  const progressInfo = getProgressInfo(currentStep);
+  const showProgress = state.stage === "question";
+  const showBack =
+    state.stage === "otp" ||
+    (state.stage === "question" && state.currentQuestionId > 1);
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-5 py-8">
-      <div className="w-full max-w-xl">
-        {showBack && (
+    <main className="min-h-screen bg-background">
+      <div className="max-w-xl mx-auto px-6 py-10">
+        {/* Top bar */}
+        <div className="flex items-center justify-between gap-4 mb-10 min-h-[44px]">
           <button
-            onClick={handleBack}
-            className="mb-8 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-medium"
+            type="button"
+            onClick={() => dispatch({ type: "BACK" })}
+            className={`text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer ${
+              showBack ? "opacity-100" : "opacity-0 pointer-events-none"
+            }`}
           >
-            &#8592; Back
+            ← Back
           </button>
-        )}
+          {showProgress && (
+            <div className="flex-1 max-w-sm">
+              <ProgressBar
+                current={state.currentQuestionId}
+                total={TOTAL_QUESTIONS}
+              />
+            </div>
+          )}
+          <div className="w-12" />
+        </div>
 
-        <AnimatePresence mode="wait" custom={direction}>
+        <AnimatePresence mode="wait" custom={state.direction}>
           <motion.div
-            key={currentStep}
-            custom={direction}
+            key={`${state.stage}-${state.currentQuestionId}`}
+            custom={state.direction}
             variants={variants}
             initial="enter"
             animate="center"
             exit="exit"
-            transition={{ duration: 0.25, ease: "easeInOut" }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
           >
-            {renderStep()}
+            {state.stage === "email" && (
+              <div className="space-y-8">
+                <div className="space-y-3 text-center">
+                  <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-[1.1]">
+                    Let&apos;s get you your build spec.
+                  </h2>
+                  <p className="text-muted-foreground">
+                    We&apos;ll send a code to verify your email, then you start
+                    the quiz.
+                  </p>
+                </div>
+                <EmailGateForm onSubmit={sendVerification} />
+              </div>
+            )}
+
+            {state.stage === "otp" && (
+              <OtpVerifyStep
+                email={state.email}
+                onVerify={verifyOtp}
+                onResend={resendCode}
+                onBack={() => dispatch({ type: "BACK" })}
+              />
+            )}
+
+            {state.stage === "question" &&
+              (() => {
+                const q = getQuestion(state.currentQuestionId);
+                if (!q) return null;
+                if (q.type === "radio" && q.options) {
+                  return (
+                    <SingleSelectStep
+                      question={q.question}
+                      subtitle={q.subtitle}
+                      options={q.options}
+                      onSelect={(v) => handleAnswer(q.fieldName, v)}
+                    />
+                  );
+                }
+                return (
+                  <TextareaStep
+                    question={q.question}
+                    subtitle={q.subtitle}
+                    placeholder={q.placeholder}
+                    required={q.required}
+                    initialValue={state.answers[q.fieldName] as string}
+                    onSubmit={(v) => handleAnswer(q.fieldName, v)}
+                  />
+                );
+              })()}
+
+            {state.stage === "generating" && (
+              <div className="space-y-6 text-center py-20">
+                <div className="relative w-16 h-16 mx-auto">
+                  <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
+                  <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                </div>
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-bold">
+                    Building your spec, {state.name}…
+                  </h2>
+                  <p className="text-muted-foreground">
+                    About 20 seconds. Hang tight.
+                  </p>
+                </div>
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
-
-        {showProgress && (
-          <div className="mt-12">
-            <ProgressBar
-              current={progressInfo.current}
-              total={progressInfo.total}
-            />
-          </div>
-        )}
       </div>
     </main>
   );
+}
+
+// Last-resort mock if the API fails completely
+function mockFallback(answers: QuizAnswers): BuildSpec {
+  return {
+    name: "Your First Build",
+    oneLiner: "A simple tool to solve your biggest time drain.",
+    targetUser: answers.who_uses || "You",
+    coreFeatures: [
+      "Capture the input",
+      "Process with Claude",
+      "Return the result",
+    ],
+    whyThisFirst:
+      "We had trouble generating a personalised spec. Try again in a moment.",
+    techStack: {
+      primary: "Claude Code",
+      mcps: [],
+      integrations: [],
+    },
+    milestones: [
+      { week: 1, title: "Setup", deliverable: "Project scaffold." },
+      { week: 2, title: "Core logic", deliverable: "First working pass." },
+      { week: 3, title: "UI", deliverable: "Usable interface." },
+      { week: 4, title: "Polish", deliverable: "Fix rough edges." },
+      { week: 5, title: "Ship", deliverable: "Live and in use." },
+    ],
+    estimatedTimeToShip: "5 weeks",
+  };
 }
