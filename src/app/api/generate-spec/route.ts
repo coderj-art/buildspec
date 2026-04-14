@@ -10,7 +10,7 @@ import {
 } from "@/lib/convertkit";
 import type { BuildSpec, QuizAnswers } from "@/lib/types";
 
-const MODEL = "claude-sonnet-4-5";
+const MODEL = "claude-opus-4-6";
 const MAX_TOKENS = 1200;
 
 const SYSTEM_PROMPT = `You are a product strategist for James Wild's AI Founders Studio.
