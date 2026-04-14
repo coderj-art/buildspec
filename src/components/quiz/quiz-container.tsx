@@ -208,10 +208,10 @@ export function QuizContainer() {
     (state.stage === "question" && state.currentQuestionId > 1);
 
   return (
-    <main className="min-h-screen bg-background">
-      <div className="max-w-xl mx-auto px-6 py-10">
-        {/* Top bar */}
-        <div className="flex items-center justify-between gap-4 mb-10 min-h-[44px]">
+    <main className="h-screen bg-background flex flex-col">
+      {/* Top bar */}
+      <div className="flex-shrink-0 px-6 py-5">
+        <div className="max-w-2xl mx-auto flex items-center justify-between gap-4 min-h-[36px]">
           <button
             type="button"
             onClick={() => dispatch({ type: "BACK" })}
@@ -231,7 +231,10 @@ export function QuizContainer() {
           )}
           <div className="w-12" />
         </div>
+      </div>
 
+      {/* Centered content */}
+      <div className="flex-1 flex items-center justify-center px-6 pb-10 min-h-0 overflow-y-auto">
         <AnimatePresence mode="wait" custom={state.direction}>
           <motion.div
             key={`${state.stage}-${state.currentQuestionId}`}
@@ -241,6 +244,7 @@ export function QuizContainer() {
             animate="center"
             exit="exit"
             transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="w-full flex justify-center"
           >
             {state.stage === "otp" && (
               <OtpVerifyStep

@@ -15,12 +15,9 @@ export function SingleSelectStep({
   options,
   onSelect,
 }: SingleSelectStepProps) {
-  // Use grid for 4 options, stack for 5+
-  const useGrid = options.length <= 4;
-
   return (
-    <div className="space-y-10">
-      <div className="space-y-3">
+    <div className="space-y-8 max-w-2xl mx-auto w-full">
+      <div className="space-y-3 text-center">
         <motion.h2
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -40,20 +37,44 @@ export function SingleSelectStep({
           </motion.p>
         )}
       </div>
-      <div className={useGrid ? "grid grid-cols-2 gap-3" : "space-y-3"}>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {options.map((option, i) => (
           <motion.button
             key={option.value}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 + i * 0.05 }}
+            transition={{ duration: 0.3, delay: 0.08 + i * 0.04 }}
             onClick={() => onSelect(option.value)}
-            className={`${useGrid ? "h-20" : "h-14"} px-5 rounded-2xl border border-foreground/80 bg-white text-foreground text-base font-medium
-                       cursor-pointer text-center
-                       hover:bg-primary hover:text-primary-foreground hover:border-primary
-                       active:scale-[0.97] transition-all duration-150`}
+            className="group relative min-h-[72px] px-5 py-4 rounded-2xl
+                       bg-card border border-border text-foreground
+                       text-base font-medium text-left cursor-pointer
+                       hover:border-primary hover:bg-primary/10
+                       hover:text-primary
+                       active:scale-[0.98]
+                       transition-all duration-150"
           >
-            {option.label}
+            <span className="relative z-10">{option.label}</span>
+            <span
+              aria-hidden
+              className="absolute right-4 top-1/2 -translate-y-1/2 size-6 rounded-full border border-border group-hover:border-primary group-hover:bg-primary flex items-center justify-center transition-all"
+            >
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 11 11"
+                fill="none"
+                className="opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <path
+                  d="M2 5.5L4.5 8L9 2.5"
+                  stroke="white"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
           </motion.button>
         ))}
       </div>
