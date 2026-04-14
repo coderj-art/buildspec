@@ -122,6 +122,12 @@ export function QuizContainer() {
       if (!data.ok) {
         throw new Error(data.error || "Failed to send code");
       }
+      if (data.bypassed) {
+        // Server bypassed OTP: JWT cookie already set, jump straight to quiz
+        dispatch({ type: "EMAIL_SENT", name, email });
+        dispatch({ type: "OTP_VERIFIED" });
+        return;
+      }
       dispatch({ type: "EMAIL_SENT", name, email });
     },
     []

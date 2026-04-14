@@ -1,8 +1,14 @@
 import { z } from "zod";
 import { Resend } from "resend";
+import { cookies } from "next/headers";
 import { generateCode } from "@/lib/otp";
 import { storeCode, checkIpRateLimit } from "@/lib/otp-store";
 import { VerificationCodeEmail } from "@/emails/verification-code-email";
+import {
+  issueSessionToken,
+  SESSION_COOKIE_NAME,
+  SESSION_COOKIE_MAX_AGE,
+} from "@/lib/jwt";
 
 const schema = z.object({
   name: z.string().min(1, "Name is required").max(80),
@@ -27,6 +33,21 @@ export async function POST(request: Request) {
     }
 
     const { name, email } = parsed.data;
+
+    // Server-side bypass for testing — skips OTP entirely, issues JWT directly.
+    // Controlled by BYPASS_OTP env var. Remove in production.
+    if (process.env.BYPASS_OTP === "true") {
+      const token = await issueSessionToken(email, name);
+      const cookieStore = await cookies();
+      cookieStore.set(SESSION_COOKIE_NAME, token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: SESSION_COOKIE_MAX_AGE,
+        path: "/",
+      });
+      return Response.json({ ok: true, bypassed: true });
+    }
 
     // IP rate limit
     const ip = getClientIp(request);
