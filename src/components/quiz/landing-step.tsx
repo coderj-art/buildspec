@@ -9,22 +9,22 @@ interface LandingStepProps {
 
 export function LandingStep({ onEmailSubmit }: LandingStepProps) {
   return (
-    <div className="min-h-screen flex flex-col relative overflow-x-hidden">
+    <div className="h-screen flex flex-col relative overflow-hidden">
       {/* Ambient gradient bars — premium depth */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-[28rem] -right-[20rem] flex gap-[6rem] rotate-[-18deg] blur-[5rem] skew-x-[-30deg] opacity-[0.45] z-0"
+        className="pointer-events-none absolute -top-[24rem] -right-[18rem] flex gap-[5rem] rotate-[-18deg] blur-[5rem] skew-x-[-30deg] opacity-[0.42] z-0"
       >
-        <div className="w-[8rem] h-[30rem] bg-gradient-to-b from-primary via-primary/30 to-transparent" />
-        <div className="w-[8rem] h-[34rem] bg-gradient-to-b from-accent via-accent/20 to-transparent" />
-        <div className="w-[8rem] h-[30rem] bg-gradient-to-b from-primary/80 via-primary/10 to-transparent" />
+        <div className="w-[7rem] h-[26rem] bg-gradient-to-b from-primary via-primary/30 to-transparent" />
+        <div className="w-[7rem] h-[30rem] bg-gradient-to-b from-accent via-accent/20 to-transparent" />
+        <div className="w-[7rem] h-[26rem] bg-gradient-to-b from-primary/80 via-primary/10 to-transparent" />
       </div>
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-[30rem] -left-[10rem] flex gap-[6rem] rotate-[-18deg] blur-[5rem] skew-x-[-30deg] opacity-[0.35] z-0"
+        className="pointer-events-none absolute -bottom-[26rem] -left-[10rem] flex gap-[5rem] rotate-[-18deg] blur-[5rem] skew-x-[-30deg] opacity-[0.32] z-0"
       >
-        <div className="w-[8rem] h-[30rem] bg-gradient-to-t from-accent/80 via-accent/20 to-transparent" />
-        <div className="w-[8rem] h-[28rem] bg-gradient-to-t from-primary via-primary/10 to-transparent" />
+        <div className="w-[7rem] h-[26rem] bg-gradient-to-t from-accent/80 via-accent/20 to-transparent" />
+        <div className="w-[7rem] h-[24rem] bg-gradient-to-t from-primary via-primary/10 to-transparent" />
       </div>
 
       {/* Subtle grain / noise */}
@@ -41,7 +41,7 @@ export function LandingStep({ onEmailSubmit }: LandingStepProps) {
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="relative z-10 w-full px-6 sm:px-10 pt-6 flex items-center justify-between"
+        className="relative z-10 w-full px-6 sm:px-10 pt-5 flex items-center justify-between flex-shrink-0"
       >
         <div className="flex items-center gap-2.5 bg-card/70 backdrop-blur-md border border-border rounded-full pl-1.5 pr-4 py-1.5">
           <div className="size-7 rounded-full bg-primary flex items-center justify-center">
@@ -63,10 +63,10 @@ export function LandingStep({ onEmailSubmit }: LandingStepProps) {
         </div>
       </motion.nav>
 
-      <main className="relative z-10 flex-1 flex items-center px-6 sm:px-10 py-12">
-        <div className="mx-auto w-full max-w-6xl grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 lg:gap-16 items-center">
+      <main className="relative z-10 flex-1 flex items-center px-6 sm:px-10 py-6 min-h-0">
+        <div className="mx-auto w-full max-w-6xl grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-8 lg:gap-14 items-center">
           {/* LEFT: hero content */}
-          <div className="space-y-7">
+          <div className="space-y-5">
             <motion.span
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -81,7 +81,7 @@ export function LandingStep({ onEmailSubmit }: LandingStepProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-5xl sm:text-6xl lg:text-7xl leading-[0.95] tracking-tight"
+              className="text-[2.75rem] sm:text-5xl lg:text-[4.25rem] leading-[0.95] tracking-tight"
             >
               <span className="font-extrabold">Nail your first</span>{" "}
               <span className="font-serif-italic text-primary relative inline-block">
@@ -98,7 +98,7 @@ export function LandingStep({ onEmailSubmit }: LandingStepProps) {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.25 }}
-              className="text-base sm:text-lg text-foreground/75 leading-relaxed max-w-md"
+              className="text-base text-foreground/75 leading-relaxed max-w-md"
             >
               Most people waste months picking what to build with Claude
               Code. Answer 10 questions and get a personalised one-page spec
@@ -135,7 +135,7 @@ export function LandingStep({ onEmailSubmit }: LandingStepProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.5 }}
-              className="hidden sm:flex items-center gap-6 pt-4 text-xs text-muted-foreground uppercase tracking-wider"
+              className="hidden sm:flex items-center gap-6 pt-2 text-xs text-muted-foreground uppercase tracking-wider"
             >
               <span className="flex items-center gap-2">
                 <span className="size-1 rounded-full bg-primary" />
@@ -144,10 +144,6 @@ export function LandingStep({ onEmailSubmit }: LandingStepProps) {
               <span className="flex items-center gap-2">
                 <span className="size-1 rounded-full bg-primary" />
                 No credit card
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="size-1 rounded-full bg-primary" />
-                22-day plan included
               </span>
             </motion.div>
           </div>
@@ -164,9 +160,9 @@ export function LandingStep({ onEmailSubmit }: LandingStepProps) {
               aria-hidden
               className="absolute -inset-4 bg-gradient-to-tr from-primary/20 via-accent/10 to-primary/20 blur-2xl rounded-[2.5rem] -z-10"
             />
-            <div className="relative bg-card/90 backdrop-blur-xl border border-border rounded-3xl p-7 sm:p-9 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]">
-              <div className="space-y-1.5 mb-6">
-                <div className="flex items-center gap-2 mb-3">
+            <div className="relative bg-card/90 backdrop-blur-xl border border-border rounded-3xl p-6 sm:p-8 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]">
+              <div className="space-y-1.5 mb-5">
+                <div className="flex items-center gap-2 mb-2.5">
                   <span className="text-[10px] uppercase tracking-[0.2em] text-primary font-bold bg-primary/10 rounded px-2 py-0.5">
                     Step 1 of 3
                   </span>
@@ -174,7 +170,7 @@ export function LandingStep({ onEmailSubmit }: LandingStepProps) {
                     ~10 seconds
                   </span>
                 </div>
-                <h2 className="text-2xl sm:text-[1.75rem] font-bold tracking-tight">
+                <h2 className="text-2xl font-bold tracking-tight">
                   Get your build spec.
                 </h2>
                 <p className="text-sm text-muted-foreground">
@@ -183,9 +179,8 @@ export function LandingStep({ onEmailSubmit }: LandingStepProps) {
               </div>
               <EmailGateForm onSubmit={onEmailSubmit} />
             </div>
-            <p className="text-xs text-center text-muted-foreground mt-5 px-4">
-              By continuing you&apos;ll also get my 22-day Claude Code build
-              plan. Unsubscribe anytime.
+            <p className="text-xs text-center text-muted-foreground mt-3.5 px-4">
+              No spam. Unsubscribe anytime.
             </p>
           </motion.div>
         </div>
@@ -195,7 +190,7 @@ export function LandingStep({ onEmailSubmit }: LandingStepProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.6 }}
-        className="relative z-10 w-full px-6 sm:px-10 py-5 border-t border-border flex items-center justify-between text-xs text-muted-foreground"
+        className="relative z-10 w-full px-6 sm:px-10 py-3.5 border-t border-border flex items-center justify-between text-xs text-muted-foreground flex-shrink-0"
       >
         <span className="tracking-wider font-semibold">BUILDSPEC™</span>
         <span>by James Wild · 2026</span>
