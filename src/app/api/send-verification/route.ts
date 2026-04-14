@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
     // Server-side bypass for testing — skips OTP entirely, issues JWT directly.
     // Controlled by BYPASS_OTP env var. Remove in production.
-    if (process.env.BYPASS_OTP === "true") {
+    if (process.env.BYPASS_OTP?.trim() === "true") {
       const token = await issueSessionToken(email, name);
       const cookieStore = await cookies();
       cookieStore.set(SESSION_COOKIE_NAME, token, {
