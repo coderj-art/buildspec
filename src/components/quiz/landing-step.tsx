@@ -1,145 +1,137 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { motion, useInView } from "motion/react";
-
-function CountUp({ target, suffix = "" }: { target: number; suffix?: string }) {
-  const [count, setCount] = useState(0);
-  const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true });
-
-  useEffect(() => {
-    if (!inView) return;
-    const duration = 1500;
-    const steps = 40;
-    const stepTime = duration / steps;
-    let current = 0;
-    const increment = target / steps;
-    const timer = setInterval(() => {
-      current += increment;
-      if (current >= target) {
-        setCount(target);
-        clearInterval(timer);
-      } else {
-        setCount(Math.floor(current));
-      }
-    }, stepTime);
-    return () => clearInterval(timer);
-  }, [inView, target]);
-
-  return (
-    <span ref={ref}>
-      {count.toLocaleString()}
-      {suffix}
-    </span>
-  );
-}
+import { motion } from "motion/react";
+import { EmailGateForm } from "./email-gate-form";
 
 interface LandingStepProps {
-  onStart: () => void;
+  onEmailSubmit: (name: string, email: string) => Promise<void>;
 }
 
-export function LandingStep({ onStart }: LandingStepProps) {
+export function LandingStep({ onEmailSubmit }: LandingStepProps) {
   return (
     <div className="min-h-screen flex flex-col">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
+      <motion.nav
+        initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="w-full px-6 pt-5"
+        className="w-full px-6 sm:px-10 pt-6 flex items-center justify-between"
       >
-        <div className="max-w-xs mx-auto bg-foreground rounded-full px-6 py-3 flex items-center justify-center gap-3">
-          <span className="text-background text-sm font-semibold tracking-tight">
+        <div className="flex items-center gap-2">
+          <div className="size-7 rounded-md bg-primary flex items-center justify-center">
+            <span className="text-primary-foreground text-[11px] font-bold tracking-wider">
+              BS
+            </span>
+          </div>
+          <span className="text-foreground text-sm font-semibold tracking-tight">
             BUILDSPEC
           </span>
-          <span className="text-background/60 text-xs">
-            by James Wild
-          </span>
         </div>
-      </motion.div>
+        <span className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+          Free tool
+        </span>
+      </motion.nav>
 
-      <div className="flex-1 flex items-center justify-center px-6 py-12 relative overflow-hidden">
-        <div className="w-full max-w-5xl text-center space-y-8 relative z-10">
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-            className="text-sm uppercase tracking-[0.2em] text-muted-foreground"
-          >
-            Free · Under 10 minutes
-          </motion.p>
+      <main className="flex-1 flex items-center px-6 sm:px-10 py-10">
+        <div className="mx-auto w-full max-w-6xl grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 lg:gap-16 items-center">
+          <div className="space-y-7">
+            <motion.span
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.05 }}
+              className="inline-block text-xs uppercase tracking-[0.22em] text-primary font-semibold"
+            >
+              BuildSpec™
+            </motion.span>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-[2.25rem] sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[0.95]"
-          >
-            Stop guessing what to build first.
-            <br />
-            Get the exact spec.
-          </motion.h1>
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="text-5xl sm:text-6xl lg:text-7xl leading-[0.95] tracking-tight"
+            >
+              <span className="font-extrabold">Nail your first</span>
+              <br />
+              <span className="font-serif-italic text-primary">
+                build
+              </span>
+              <span className="font-extrabold">.</span>
+            </motion.h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="text-lg sm:text-xl text-muted-foreground leading-snug max-w-2xl mx-auto"
-          >
-            Answer 10 questions. Get a personalised one-page spec for the
-            exact tool you should build first with Claude Code.
-            Internal ops, client tools, or a product to sell. Whatever fits.
-          </motion.p>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.25 }}
+              className="text-base sm:text-lg text-foreground/75 leading-relaxed max-w-md"
+            >
+              Most people waste months picking what to build with Claude
+              Code. Answer 10 questions and get a personalised one-page spec
+              for the exact tool you should build first. In under 10 minutes.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="flex items-center gap-3 pt-2"
+            >
+              <div className="flex -space-x-2">
+                {[0, 1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="size-8 rounded-full border-2 border-background"
+                    style={{
+                      background: [
+                        "#E07A5F",
+                        "#81B29A",
+                        "#F2CC8F",
+                        "#3D405B",
+                      ][i],
+                    }}
+                  />
+                ))}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Trusted by{" "}
+                <span className="text-foreground font-semibold">1,600+</span>{" "}
+                founders
+              </p>
+            </motion.div>
+          </div>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.7 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="w-full"
           >
-            <button
-              onClick={onStart}
-              className="inline-flex items-center gap-2 h-16 px-14 rounded-full bg-primary text-primary-foreground font-bold text-lg cursor-pointer uppercase tracking-wider hover:opacity-80 active:scale-[0.98] transition-all duration-200"
-            >
-              Build My Spec
-            </button>
-            <p className="text-xs text-muted-foreground mt-4">
-              No credit card. Plus a 22-day build plan to your inbox.
+            <div className="bg-card border border-border rounded-3xl p-7 sm:p-9 shadow-2xl shadow-black/30">
+              <div className="space-y-1.5 mb-6">
+                <h2 className="text-2xl font-bold tracking-tight">
+                  Get started for free
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Enter your details to build your spec.
+                </p>
+              </div>
+              <EmailGateForm onSubmit={onEmailSubmit} />
+            </div>
+            <p className="text-xs text-center text-muted-foreground mt-4">
+              By continuing you agree to receive a 22-day build plan. Unsubscribe
+              anytime.
             </p>
           </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.9 }}
-            className="flex items-center justify-center pt-6"
-          >
-            <div className="text-center px-8 sm:px-12">
-              <p className="text-4xl sm:text-5xl font-extrabold tracking-tight">
-                <CountUp target={52} suffix="K+" />
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">followers</p>
-            </div>
-            <div className="w-px h-12 bg-foreground/20" />
-            <div className="text-center px-8 sm:px-12">
-              <p className="text-4xl sm:text-5xl font-extrabold tracking-tight">
-                <CountUp target={6} />
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                apps shipped
-              </p>
-            </div>
-            <div className="w-px h-12 bg-foreground/20" />
-            <div className="text-center px-8 sm:px-12">
-              <p className="text-4xl sm:text-5xl font-extrabold tracking-tight">
-                <CountUp target={1600} suffix="+" />
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                founders trained
-              </p>
-            </div>
-          </motion.div>
         </div>
-      </div>
+      </main>
+
+      <motion.footer
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.6 }}
+        className="w-full px-6 sm:px-10 py-5 border-t border-border flex items-center justify-between text-xs text-muted-foreground"
+      >
+        <span className="tracking-wider">BUILDSPEC™</span>
+        <span>by James Wild</span>
+      </motion.footer>
     </div>
   );
 }

@@ -8,6 +8,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-rethink);
+  --font-serif: var(--font-cormorant);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -33,24 +34,33 @@
 
 :root {
   --radius: 9999px;
-  --background: #f7f7f8;
-  --foreground: #0a0a0a;
-  --card: #ffffff;
-  --card-foreground: #0a0a0a;
-  --popover: #ffffff;
-  --popover-foreground: #0a0a0a;
-  --primary: #0a0a0a;
-  --primary-foreground: #ffffff;
-  --secondary: #ededef;
-  --secondary-foreground: #0a0a0a;
-  --muted: #ededef;
-  --muted-foreground: #71717a;
-  --accent: #ededef;
-  --accent-foreground: #0a0a0a;
-  --destructive: #dc2626;
-  --border: #dcdce0;
-  --input: #dcdce0;
-  --ring: #0a0a0a;
+
+  /* Deep Forest + Terracotta */
+  --background: #152624;
+  --foreground: #F4EDDE;
+
+  --card: #1E332F;
+  --card-foreground: #F4EDDE;
+  --popover: #1E332F;
+  --popover-foreground: #F4EDDE;
+
+  --primary: #E07A5F;
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #1E332F;
+  --secondary-foreground: #F4EDDE;
+
+  --muted: #1E332F;
+  --muted-foreground: rgba(244, 237, 222, 0.62);
+
+  --accent: #E07A5F;
+  --accent-foreground: #FFFFFF;
+
+  --destructive: #D4614A;
+
+  --border: rgba(244, 237, 222, 0.14);
+  --input: rgba(244, 237, 222, 0.08);
+  --ring: #E07A5F;
 }
 
 @layer base {
@@ -60,5 +70,11 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-rethink), ui-sans-serif, system-ui, sans-serif;
+  }
+  .font-serif-italic {
+    font-family: var(--font-cormorant), Georgia, serif;
+    font-style: italic;
+    font-weight: 500;
+    letter-spacing: -0.015em;
   }
 }

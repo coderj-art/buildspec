@@ -11,7 +11,6 @@ import {
 import { TOTAL_QUESTIONS, getQuestion } from "@/lib/quiz-config";
 import { ProgressBar } from "./progress-bar";
 import { LandingStep } from "./landing-step";
-import { EmailGateForm } from "./email-gate-form";
 import { OtpVerifyStep } from "./otp-verify-step";
 import { SingleSelectStep } from "./single-select-step";
 import { TextareaStep } from "./textarea-step";
@@ -29,15 +28,13 @@ interface State {
 }
 
 type Action =
-  | { type: "START" }
   | { type: "EMAIL_SENT"; name: string; email: string }
   | { type: "OTP_VERIFIED" }
   | { type: "ANSWER"; field: keyof QuizAnswers; value: string }
   | { type: "BACK" }
   | { type: "START_GENERATE" }
   | { type: "SPEC_READY"; spec: BuildSpec }
-  | { type: "ERROR"; message: string }
-  | { type: "RESET_TO_EMAIL" };
+  | { type: "ERROR"; message: string };
 
 const initialState: State = {
   stage: "landing",
@@ -52,8 +49,6 @@ const initialState: State = {
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case "START":
-      return { ...state, stage: "email", direction: 1 };
     case "EMAIL_SENT":
       return {
         ...state,
@@ -79,7 +74,7 @@ function reducer(state: State, action: Action): State {
     }
     case "BACK": {
       if (state.stage === "otp") {
-        return { ...state, stage: "email", direction: -1, errorMessage: "" };
+        return { ...state, stage: "landing", direction: -1, errorMessage: "" };
       }
       if (state.stage === "question" && state.currentQuestionId > 1) {
         return {
@@ -96,8 +91,6 @@ function reducer(state: State, action: Action): State {
       return { ...state, stage: "spec", spec: action.spec, direction: 1 };
     case "ERROR":
       return { ...state, errorMessage: action.message };
-    case "RESET_TO_EMAIL":
-      return { ...state, stage: "email", errorMessage: "", direction: -1 };
     default:
       return state;
   }
@@ -189,9 +182,9 @@ export function QuizContainer() {
     [state.answers, state.currentQuestionId, generateSpec]
   );
 
-  // Landing
+  // Landing (handles email submission inline)
   if (state.stage === "landing") {
-    return <LandingStep onStart={() => dispatch({ type: "START" })} />;
+    return <LandingStep onEmailSubmit={sendVerification} />;
   }
 
   // Spec (full screen)
@@ -243,21 +236,6 @@ export function QuizContainer() {
             exit="exit"
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
-            {state.stage === "email" && (
-              <div className="space-y-8">
-                <div className="space-y-3 text-center">
-                  <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-[1.1]">
-                    Let&apos;s get you your build spec.
-                  </h2>
-                  <p className="text-muted-foreground">
-                    We&apos;ll send a code to verify your email, then you start
-                    the quiz.
-                  </p>
-                </div>
-                <EmailGateForm onSubmit={sendVerification} />
-              </div>
-            )}
-
             {state.stage === "otp" && (
               <OtpVerifyStep
                 email={state.email}
